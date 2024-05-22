@@ -1,7 +1,7 @@
 const execSync = require('child_process').execSync;
 import * as fs from 'fs';
 import * as path from 'path';
-var albums = require('../albums.json');
+var albums = require('../../albums.json');
 import * as crypto from 'crypto';
 
 export interface IimgFile {
@@ -76,8 +76,7 @@ export class SwapClass {
 			rawFilePath = await this.resizeFile(image);
 		}
 
-
-		return 'Image path';
+		return rawFilePath;
 	}
 
 	private async getRandomImage(isVertical: boolean = false) {
@@ -97,37 +96,39 @@ export class SwapClass {
 	}
 
 	private async mergeImages(image1: IimgFile, image2: IimgFile) {
-		return '';
-	}
+		const maxWidth = 1100;
+		const maxHeight = 720;
+		const point = 15;
+		const resized1 = await this.resizeFile(image1, maxHeight, maxWidth, point, '/tmp/image1.png');
+		const resized2 = await this.resizeFile(image2, maxHeight, maxWidth, point, '/tmp/image2.png');
 
-	private async resizeFile(image: IimgFile) {
-
-		const cmd = `convert ${image.fileName} -resize ${this.maxWidth}x${this.maxHeight}\\\> /tmp/test.png`;
+		const cmd = `convert ${resized1} ${resized2} +append /tmp/image.png`;
 		console.log(cmd);
 		execSync(cmd, { encoding: 'utf-8' });
 
-		// const cmd2= `convert /tmp/test.png -pointsize 30 -fill yellow -gravity SouthWest -draw 'text 3,3 "${image.album}"' /tmp/test.png`;
-		// console.log(cmd2);
-		// execSync(cmd2, { encoding: 'utf-8' });
+		return '/tmp/image.png';
+	}
 
-		const cmd2= `convert /tmp/test.png -pointsize 30 -fill yellow -gravity SouthWest -annotate +0+0 "${image.album}" /tmp/test.png`;
+	private async resizeFile(image: IimgFile, maxHeight:number = this.maxHeight, maxWidth: number = this.maxWidth, pointSize: number = 30, fname: string = '/tmp/image.png') {
+
+		const cmd = `convert ${image.fileName} -resize ${maxWidth}x${maxHeight}\\\> ${fname}`;
+		console.log(cmd);
+		execSync(cmd, { encoding: 'utf-8' });
+
+		const upVal = pointSize + Math.floor(pointSize / 3)
+		const cmd2= `convert ${fname} -pointsize ${pointSize} -fill yellow -undercolor Black -gravity SouthWest -annotate +0+${upVal} "${image.album}" ${fname}`;
 		console.log(cmd2);
 		execSync(cmd2, { encoding: 'utf-8' });
 
 		const tmp = image.fileDate.split('T')
 		const imageTime = `${tmp[0]} ${tmp[1].substring(0, tmp[1].length -1)}`;
 
-		// const cmd3 = `convert /tmp/test.png -pointsize 30 -fill yellow -gravity SouthEast -draw 'text 3,3 "${imageTime}"' /tmp/test.png`;
-		// console.log(cmd3);
-		// execSync(cmd3, { encoding: 'utf-8' });
-
-		const cmd3 = `convert /tmp/test.png -pointsize 30 -fill yellow -gravity SouthEast -annotate +0+0 "${imageTime}" /tmp/test.png`;
+		const cmd3 = `convert ${fname} -pointsize ${pointSize} -fill yellow -undercolor Black -gravity SouthWest -annotate +0+0 "${imageTime}" ${fname}`;
 		console.log(cmd3);
 		execSync(cmd3, { encoding: 'utf-8' });
 
-		return '';
+		return fname;
 	}
-
 
 	private async createImageData() {
 		const allFiles: string[] = [];
