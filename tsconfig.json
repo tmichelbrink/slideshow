@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig-base.json",
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "dist",
+  ],
+  "ts-node": {
+    "require": [
+      "dotenv/config",
+      "tsconfig-paths/register"
+    ],
+    "swc": false,
+    "transpileOnly": true,
+  }
+}
