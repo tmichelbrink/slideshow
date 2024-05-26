@@ -35,8 +35,11 @@ export class SwapClass {
 	protected filesFile = '/tmp/imagesFiles.txt';
 	protected imageDataFile = '/tmp/imagesData.json';
 
+	// protected maxWidth = 1100;
+	// protected maxHeight = 700;
+
 	protected maxWidth = 1100;
-	protected maxHeight = 720;
+	protected maxHeight = 850;
 
 	protected images: IimageData = {
 		imageData: {},
@@ -64,7 +67,7 @@ export class SwapClass {
 		this.isInitialized = true;
 	}
 
-	public async getImage() {
+	public async getImage(dstFile: string) {
 		const image = await this.getRandomImage();
 		let rawFilePath: string;
 		let image2: IimgFile | null = null;
@@ -76,7 +79,13 @@ export class SwapClass {
 			rawFilePath = await this.resizeFile(image);
 		}
 
-		return rawFilePath;
+		const finalFilePath = await this.finalResize(rawFilePath);
+
+		fs.copyFileSync(finalFilePath, dstFile);
+		const now = new Date();
+		console.log(`${now}: Slide created`);
+
+		return;
 	}
 
 	private async getRandomImage(isVertical: boolean = false) {
@@ -86,6 +95,8 @@ export class SwapClass {
 		while(image === null) {
 			const maxImageQty = isVertical ? this.images.verticalImages.length -1 : this.images.allImages.length -1
 			const rndNum = Math.floor(Math.random() * maxImageQty);
+			const now = new Date();
+			console.log(`${now}: Got image ${rndNum}`);
 			const hash = isVertical ? this.images.verticalImages[rndNum] : this.images.allImages[rndNum];
 			if(hash in this.images.imageData)  {
 				image = this.images.imageData[hash];
@@ -96,14 +107,14 @@ export class SwapClass {
 	}
 
 	private async mergeImages(image1: IimgFile, image2: IimgFile) {
-		const maxWidth = 1100;
-		const maxHeight = 720;
+		const maxWidth = Math.floor(this.maxWidth / 2);
+		const maxHeight = this.maxHeight;
 		const point = 15;
 		const resized1 = await this.resizeFile(image1, maxHeight, maxWidth, point, '/tmp/image1.png');
 		const resized2 = await this.resizeFile(image2, maxHeight, maxWidth, point, '/tmp/image2.png');
 
 		const cmd = `convert ${resized1} ${resized2} +append /tmp/image.png`;
-		console.log(cmd);
+		// console.log(cmd);
 		execSync(cmd, { encoding: 'utf-8' });
 
 		return '/tmp/image.png';
@@ -112,22 +123,32 @@ export class SwapClass {
 	private async resizeFile(image: IimgFile, maxHeight:number = this.maxHeight, maxWidth: number = this.maxWidth, pointSize: number = 30, fname: string = '/tmp/image.png') {
 
 		const cmd = `convert ${image.fileName} -resize ${maxWidth}x${maxHeight}\\\> ${fname}`;
-		console.log(cmd);
+		// console.log(cmd);
 		execSync(cmd, { encoding: 'utf-8' });
 
 		const upVal = pointSize + Math.floor(pointSize / 3)
-		const cmd2= `convert ${fname} -pointsize ${pointSize} -fill yellow -undercolor Black -gravity SouthWest -annotate +0+${upVal} "${image.album}" ${fname}`;
-		console.log(cmd2);
+		const cmd2= `convert ${fname} -pointsize ${pointSize} -fill yellow -undercolor Black -gravity SouthWest -annotate +15+${upVal} "${image.album}" ${fname}`;
+		// console.log(cmd2);
 		execSync(cmd2, { encoding: 'utf-8' });
 
 		const tmp = image.fileDate.split('T')
 		const imageTime = `${tmp[0]} ${tmp[1].substring(0, tmp[1].length -1)}`;
 
-		const cmd3 = `convert ${fname} -pointsize ${pointSize} -fill yellow -undercolor Black -gravity SouthWest -annotate +0+0 "${imageTime}" ${fname}`;
-		console.log(cmd3);
+		const cmd3 = `convert ${fname} -pointsize ${pointSize} -fill yellow -undercolor Black -gravity SouthWest -annotate +15+0 "${imageTime}" ${fname}`;
+		// console.log(cmd3);
 		execSync(cmd3, { encoding: 'utf-8' });
 
 		return fname;
+	}
+
+	private async finalResize(imagePath: string) {
+
+		const finalPath = '/tmp/imageFinal.png';
+		const cmd = `convert ${imagePath} -background none -gravity center -extent ${this.maxWidth}x${this.maxHeight} -resize ${this.maxWidth}x${this.maxHeight} ${finalPath}`;
+		console.log(cmd);
+		execSync(cmd, { encoding: 'utf-8' });
+
+		return finalPath
 	}
 
 	private async createImageData() {
