@@ -17,5 +17,13 @@ module.exports = {
 			autorestart: true,
                         merge_logs : true,
                 },
+		{
+                        name: 'slide',
+                        cwd: '/home/thom/projects/slideshow',
+                        script: 'src/slide.ts',
+                        interpreter: '/usr/bin/ts-node',
+			autorestart: true,
+                        merge_logs : true,
+                },
         ]
 }                                                                                                                                                                                            
